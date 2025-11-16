@@ -3,49 +3,50 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { sdk } from '@farcaster/miniapp-sdk';
-import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import Link from 'next/link';
 import PayToAccess from '../components/PayToAccess';
 import styles from './page.module.css';
 
 export default function Home() {
-  const { context, setMiniAppReady, isMiniAppReady } = useMiniKit();
+  const [token, setToken] = useState<string | null>(null);
+  const [fid, setFid] = useState<number | null>(null);
   const [address, setAddress] = useState<string | null>(null);
   const [ownsOrigin, setOwnsOrigin] = useState(false);
   const [ownsMonje, setOwnsMonje] = useState(false);
   const [mintPrice, setMintPrice] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Initialize MiniKit + Farcaster MiniApp SDK
-  useEffect(() => {
-    async function init() {
-      try {
-        // Wait for MiniApp environment to be ready
-        if (!isMiniAppReady) setMiniAppReady();
+  // ✅ Authenticate with Farcaster / Base QuickAuth
+  async function handleSignIn() {
+    try {
+      const { token } = await sdk.quickAuth.getToken();
+      setToken(token);
 
-        // If user context is available, grab their ETH/Base address
-        const ethAddr =
-          (context?.user as any)?.verified_addresses?.eth_addresses?.[0] ??
-          (context?.user as any)?.address ??
-          null;
+      const res = await sdk.quickAuth.fetch('/api/auth', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data?.userFid) setFid(data.userFid);
 
-        if (ethAddr) setAddress(ethAddr);
-
-        // ✅ Tell Farcaster SDK we’re ready (this hides the splash screen)
-        await sdk.actions.ready();
-      } catch (err) {
-        console.error('MiniApp init failed:', err);
-      }
+      // for Base L2 users, pull ETH/Base address from token payload if available
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (payload?.sub) setAddress(payload.sub);
+    } catch (err) {
+      console.error('Authentication failed:', err);
     }
-    init();
-  }, [context, isMiniAppReady, setMiniAppReady]);
+  }
 
-  // Check NFT + token ownership
+  // ✅ Hide splash once app ready
+  useEffect(() => {
+    sdk.actions.ready().catch(console.error);
+  }, []);
+
+  // ✅ Check NFT/token holdings when user authenticated
   useEffect(() => {
     if (!address) return;
     setLoading(true);
 
-    fetch(`/api/check-nft?address=${address}`)
+    fetch(`/api/auth/check-nft?address=${address}`)
       .then((r) => r.json())
       .then((d) => {
         setOwnsOrigin(d.ownsOrigin);
@@ -55,6 +56,21 @@ export default function Home() {
       .catch((err) => console.error('Check failed', err))
       .finally(() => setLoading(false));
   }, [address]);
+
+  if (!token) {
+    return (
+      <div className={styles.container}>
+        <Image src="/sphere.svg" alt="Sphere" width={200} height={200} priority />
+        <h2 className="mb-6 text-lg text-white">Sign in to continue</h2>
+        <button
+          onClick={handleSignIn}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg"
+        >
+          Sign In with Farcaster
+        </button>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -75,20 +91,14 @@ export default function Home() {
       ) : ownsMonje ? (
         <div className="text-center space-y-4">
           <p className="text-amber-300">🎵 You already own a Monje NFT!</p>
-          <Link
-            href="/music"
-            className="px-4 py-3 bg-amber-600 text-white rounded hover:bg-amber-700 inline-block"
-          >
+          <Link href="/music" className="px-4 py-3 bg-amber-600 text-white rounded hover:bg-amber-700">
             Go to Music Studio
           </Link>
         </div>
       ) : ownsOrigin ? (
         <div className="text-center space-y-4">
           <p className="text-green-400">🪙 You hold OriginStory — your mint is free!</p>
-          <Link
-            href="/create"
-            className="px-4 py-3 bg-green-600 text-white rounded hover:bg-green-700 inline-block"
-          >
+          <Link href="/create" className="px-4 py-3 bg-green-600 text-white rounded hover:bg-green-700">
             Create & Mint Your Monje
           </Link>
         </div>
