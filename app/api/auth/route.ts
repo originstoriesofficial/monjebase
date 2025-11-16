@@ -1,63 +1,41 @@
-import { Errors, createClient } from "@farcaster/quick-auth";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
+import { ethers } from 'ethers';
 
-const client = createClient();
+const ORIGIN_CONTRACT = process.env.ORIGIN_CONTRACT!;
+const MONKERIA_CONTRACT = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS!;
+const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL!;
 
-export async function GET(request: NextRequest) {
-  const authorization = request.headers.get("Authorization");
+const provider = new ethers.JsonRpcProvider(RPC_URL);
 
-  if (!authorization || !authorization.startsWith("Bearer ")) {
-    return NextResponse.json({ message: "Missing token" }, { status: 401 });
-  }
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const address = searchParams.get('address');
+  if (!address) return NextResponse.json({ error: 'Missing address' }, { status: 400 });
 
   try {
-    const payload = await client.verifyJwt({
-      token: authorization.split(" ")[1] as string,
-      domain: getUrlHost(request),
+    const origin = new ethers.Contract(
+      ORIGIN_CONTRACT,
+      ['function balanceOf(address) view returns (uint256)'],
+      provider
+    );
+    const monje = new ethers.Contract(
+      MONKERIA_CONTRACT,
+      ['function balanceOf(address) view returns (uint256)'],
+      provider
+    );
+
+    const [originBal, monjeBal] = await Promise.all([
+      origin.balanceOf(address),
+      monje.balanceOf(address),
+    ]);
+
+    return NextResponse.json({
+      ownsOrigin: originBal > 0n,
+      ownsMonje: monjeBal > 0n,
+      mintPrice: 0.002, // fallback default
     });
-
-    const fid = Number(payload.sub);
-    if (!fid) {
-      return NextResponse.json({ message: "Invalid FID" }, { status: 400 });
-    }
-
-    return NextResponse.json({ fid });
-  } catch (e) {
-    if (e instanceof Errors.InvalidTokenError) {
-      return NextResponse.json({ message: "Invalid token" }, { status: 401 });
-    }
-
-    if (e instanceof Error) {
-      return NextResponse.json({ message: e.message }, { status: 500 });
-    }
-
-    throw e;
+  } catch (err) {
+    console.error('NFT check failed', err);
+    return NextResponse.json({ error: 'Failed to check ownership' }, { status: 500 });
   }
-}
-
-function getUrlHost(request: NextRequest) {
-  const origin = request.headers.get("origin");
-  if (origin) {
-    try {
-      const url = new URL(origin);
-      return url.host;
-    } catch (error) {
-      console.warn("Invalid origin header:", origin, error);
-    }
-  }
-
-  const host = request.headers.get("host");
-  if (host) return host;
-
-  let urlValue: string;
-  if (process.env.VERCEL_ENV === "production") {
-    urlValue = process.env.NEXT_PUBLIC_URL!;
-  } else if (process.env.VERCEL_URL) {
-    urlValue = `https://${process.env.VERCEL_URL}`;
-  } else {
-    urlValue = "http://localhost:3000";
-  }
-
-  const url = new URL(urlValue);
-  return url.host;
 }
