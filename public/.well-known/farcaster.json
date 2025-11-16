@@ -1,0 +1,30 @@
+{
+    "canonicalDomain": "https://monjebase.vercel.app",
+    "url": "https://monjebase.vercel.app",
+    "chainId": "0x2105",
+        "accountAssociation": {
+          "header": "eyJmaWQiOjEzMzE0LCJ0eXBlIjoiYXV0aCIsImtleSI6IjB4ODlGRDMyNzIxODlEMzIzZjAzREQ3Mjk4NkY0Qzk5NTNFZTlhMjVCMiJ9",
+          "payload": "eyJkb21haW4iOiJtb25qZWJhc2UudmVyY2VsLmFwcCJ9",
+          "signature": "h+ICYWYM0NR42nS6gGmC+wl9dvXkhygH0w9/eyQLkxc7qItRrbWjLQiKU9FvDG+rSadRhC2arZ9jxzStzkgo0xw="
+        },
+    "baseBuilder": {
+      "ownerAddress": "0x1ffcD029CE51fFf63C2Cc32445779CDE27C0C40f"
+    },
+    "miniapp": {
+      "version": "1",
+      "name": "La Monjería",
+      "iconUrl": "https://monjebase.vercel.app/icon.png",
+      "homeUrl": "https://monjebase.vercel.app",
+      "imageUrl": "https://monjebase.vercel.app/image.png",
+      "splashImageUrl": "https://monjebase.vercel.app/splash.png",
+      "splashBackgroundColor": "#ce19e6",
+      "webhookUrl": "https://monjebase.vercel.app/api/webhook",
+      "subtitle": "AI Animation and Music Studio",
+      "description": "Create and mint your own Monje and craft a unique music anthem",
+      "primaryCategory": "entertainment",
+      "tags": ["music", "art", "nft", "ai", "creativity"],
+      "ogTitle": "La Monjería - AI Studio",
+      "ogDescription": "Create, customize, and soundtrack your own Monje on Base"
+    }
+  }
+  
