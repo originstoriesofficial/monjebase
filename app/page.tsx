@@ -2,46 +2,46 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { sdk } from '@farcaster/miniapp-sdk';
 import Link from 'next/link';
+import { Wallet } from '@coinbase/onchainkit/wallet';
+import { useMiniKit, useQuickAuth } from '@coinbase/onchainkit/minikit';
 import PayToAccess from '../components/PayToAccess';
 import styles from './page.module.css';
 
 export default function Home() {
-  const [token, setToken] = useState<string | null>(null);
-  const [fid, setFid] = useState<number | null>(null);
-  const [address, setAddress] = useState<string | null>(null);
+  const { setMiniAppReady, isMiniAppReady, context } = useMiniKit();
+  const { data, isLoading, error } = useQuickAuth<{ userFid: string }>('/api/verify');
+
   const [ownsOrigin, setOwnsOrigin] = useState(false);
   const [ownsMonje, setOwnsMonje] = useState(false);
   const [mintPrice, setMintPrice] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-
-  async function handleSignIn() {
-    try {
-      const { token } = await sdk.quickAuth.getToken();
-      setToken(token);
-
-      const res = await sdk.quickAuth.fetch('/api/verify', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data?.userFid) setFid(data.userFid);
-
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      if (payload?.sub) setAddress(payload.sub);
-    } catch (err) {
-      console.error('Authentication failed:', err);
-    }
-  }
+  const [address, setAddress] = useState<string | null>(null);
 
   useEffect(() => {
-    sdk.actions.ready().catch(console.error);
-  }, []);
+    if (!isMiniAppReady) setMiniAppReady();
+  }, [isMiniAppReady, setMiniAppReady]);
 
+  const user = context?.user;
+
+  // ✅ Step 1: Resolve custody address server-side via Neynar
+  useEffect(() => {
+    if (!data?.userFid) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/neynar/user-by-fid?fid=${data.userFid}`);
+        const json = await res.json();
+        setAddress(json.custody_address);
+      } catch (err) {
+        console.error('Failed to resolve address:', err);
+      }
+    })();
+  }, [data?.userFid]);
+
+  // ✅ Step 2: Check NFT ownership
   useEffect(() => {
     if (!address) return;
     setLoading(true);
-
     fetch(`/api/auth/check-nft?address=${address}`)
       .then((r) => r.json())
       .then((d) => {
@@ -49,26 +49,27 @@ export default function Home() {
         setOwnsMonje(d.ownsMonje);
         setMintPrice(d.mintPrice);
       })
-      .catch((err) => console.error('Check failed', err))
+      .catch((err) => console.error('NFT check failed:', err))
       .finally(() => setLoading(false));
   }, [address]);
 
-  if (!token) {
+  // ✅ Step 3: Render
+  if (!data && !user) {
     return (
       <div className={styles.container}>
+        <header className={styles.headerWrapper}>
+          <Wallet />
+        </header>
+
         <Image src="/sphere.svg" alt="Sphere" width={200} height={200} priority />
         <h2 className="mb-6 text-lg text-white">Sign in to continue</h2>
-        <button
-          onClick={handleSignIn}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg"
-        >
-          Sign In with Farcaster
-        </button>
+        <p className="text-zinc-400">Use your Base or Farcaster account to sign in.</p>
+        {error && <p className="text-red-400 mt-4">{error.message}</p>}
       </div>
     );
   }
 
-  if (loading) {
+  if (loading || isLoading) {
     return (
       <div className={styles.container}>
         <Image src="/sphere.svg" alt="Sphere" width={200} height={200} priority />
@@ -79,15 +80,21 @@ export default function Home() {
 
   return (
     <div className={styles.container}>
+      <header className={styles.headerWrapper}>
+        <Wallet />
+      </header>
+
       <Image src="/sphere.svg" alt="Sphere" width={200} height={200} priority />
       <h1 className={styles.title}>La Monjería</h1>
 
-      {!address ? (
-        <p>Connect your wallet to begin.</p>
-      ) : ownsMonje ? (
+      <p className="text-white mb-4">
+        Welcome, <strong>@{user?.username ?? data?.userFid}</strong>
+      </p>
+
+      {ownsMonje ? (
         <div className="text-center space-y-4">
           <p className="text-amber-300">🎵 You already own a Monje NFT!</p>
-          <Link href="/music" className="px-4 py-3 bg-amber-600 text-white rounded hover:bg-amber-700">
+          <Link href="/score" className="px-4 py-3 bg-amber-600 text-white rounded hover:bg-amber-700">
             Go to Music Studio
           </Link>
         </div>
@@ -103,9 +110,15 @@ export default function Home() {
           <p className="text-amber-400">
             You don’t hold OriginStory. Mint costs {mintPrice ?? 0.002} ETH.
           </p>
-          <PayToAccess address={address} priceEth={(mintPrice ?? 0.002).toString()} />
+          {address && (
+            <PayToAccess address={address} priceEth={(mintPrice ?? 0.002).toString()} />
+          )}
           <p className="text-zinc-400 text-sm mt-4">
-            Or <Link href="/create" className="underline text-amber-300">go create your Monje</Link> now.
+            Or{' '}
+            <Link href="/create" className="underline text-amber-300">
+              go create your Monje
+            </Link>{' '}
+            now.
           </p>
         </div>
       )}
