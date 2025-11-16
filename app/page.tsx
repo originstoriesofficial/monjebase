@@ -1,9 +1,7 @@
 'use client';
-
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Wallet } from '@coinbase/onchainkit/wallet';
 import { useMiniKit, useAuthenticate } from '@coinbase/onchainkit/minikit';
 import PayToAccess from '../components/PayToAccess';
 import styles from './page.module.css';
@@ -12,7 +10,7 @@ export default function Home() {
   const { setMiniAppReady, isMiniAppReady, context } = useMiniKit();
   const { signIn } = useAuthenticate();
 
-  const [address, setAddress] = useState<string | null>(null);
+  const [resolvedAddress, setResolvedAddress] = useState<string | null>(null);
   const [ownsOrigin, setOwnsOrigin] = useState(false);
   const [ownsMonje, setOwnsMonje] = useState(false);
   const [mintPrice, setMintPrice] = useState<number | null>(null);
@@ -25,30 +23,25 @@ export default function Home() {
     if (!isMiniAppReady) setMiniAppReady();
   }, [isMiniAppReady, setMiniAppReady]);
 
-  // ✅ Detect wallet via Base provider (Coinbase injected EIP-1193)
+  // ✅ Resolve your Base ENS name
   useEffect(() => {
-    async function getBaseWallet() {
-      if (typeof window === 'undefined') return;
-      const provider = (window as any).ethereum;
-      if (!provider?.request) return;
-
+    async function resolveName() {
       try {
-        const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        if (accounts?.[0]) setAddress(accounts[0]);
-      } catch (e) {
-        console.warn('No Base wallet connected yet');
+        const res = await fetch(`/api/resolve-base-address?name=originstories.base.eth`);
+        const data = await res.json();
+        if (data.address) setResolvedAddress(data.address);
+      } catch (err) {
+        console.error('Resolve failed:', err);
       }
     }
-
-    getBaseWallet();
+    resolveName();
   }, []);
 
   // ✅ Check NFT ownership
   useEffect(() => {
-    if (!address) return;
+    if (!resolvedAddress) return;
     setChecking(true);
-
-    fetch(`/api/auth/check-nft?address=${address}`)
+    fetch(`/api/auth/check-nft?address=${resolvedAddress}`)
       .then((r) => r.json())
       .then((d) => {
         setOwnsOrigin(d.ownsOrigin);
@@ -57,16 +50,11 @@ export default function Home() {
       })
       .catch((err) => console.error('NFT check failed:', err))
       .finally(() => setChecking(false));
-  }, [address]);
+  }, [resolvedAddress]);
 
-  // 🟣 Sign-in screen
   if (!user) {
     return (
       <div className={styles.container}>
-        <header className={styles.headerWrapper}>
-          <Wallet />
-        </header>
-
         <Image src="/sphere.svg" alt="Sphere" width={200} height={200} priority />
         <h2 className="mb-6 text-lg text-white">Sign in with Base</h2>
         <button
@@ -79,7 +67,6 @@ export default function Home() {
     );
   }
 
-  // 🟢 Checking ownership
   if (checking) {
     return (
       <div className={styles.container}>
@@ -89,18 +76,17 @@ export default function Home() {
     );
   }
 
-  // 🟢 Authenticated + wallet connected
   return (
     <div className={styles.container}>
-      <header className={styles.headerWrapper}>
-        <Wallet />
-      </header>
-
       <Image src="/sphere.svg" alt="Sphere" width={200} height={200} priority />
       <h1 className={styles.title}>La Monjería</h1>
 
       <p className="text-white mb-4">
-        Welcome, <strong>@{user?.username ?? address ?? 'Guest'}</strong>
+        Welcome, <strong>@{user?.username ?? 'Base User'}</strong>
+      </p>
+
+      <p className="text-sm text-gray-400 mb-6">
+        Connected Base address: {resolvedAddress ?? 'Resolving...'}
       </p>
 
       {ownsMonje ? (
@@ -122,16 +108,12 @@ export default function Home() {
           <p className="text-amber-400">
             You don’t hold OriginStory. Mint costs {mintPrice ?? 0.002} ETH.
           </p>
-          {address && (
-            <PayToAccess address={address} priceEth={(mintPrice ?? 0.002).toString()} />
+          {resolvedAddress && (
+            <PayToAccess
+              address={resolvedAddress}
+              priceEth={(mintPrice ?? 0.002).toString()}
+            />
           )}
-          <p className="text-zinc-400 text-sm mt-4">
-            Or{' '}
-            <Link href="/create" className="underline text-amber-300">
-              go create your Monje
-            </Link>{' '}
-            now.
-          </p>
         </div>
       )}
     </div>
