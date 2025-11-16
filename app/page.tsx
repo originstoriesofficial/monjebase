@@ -20,27 +20,34 @@ export default function Home() {
 
   const user = context?.user;
 
-  // initialize Mini App
+  // ✅ Initialize MiniKit
   useEffect(() => {
     if (!isMiniAppReady) setMiniAppReady();
   }, [isMiniAppReady, setMiniAppReady]);
 
-  // simulate wallet connection once Base authenticates
+  // ✅ Detect wallet via Base provider (Coinbase injected EIP-1193)
   useEffect(() => {
-    // Coinbase MiniKit handles identity, not wallet address
-    // so we'll pull address from API if available later
-    if (!address && user?.fid) {
-      fetch(`/api/auth/fid-to-address?fid=${user.fid}`)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((d) => d?.address && setAddress(d.address))
-        .catch(() => {});
-    }
-  }, [user, address]);
+    async function getBaseWallet() {
+      if (typeof window === 'undefined') return;
+      const provider = (window as any).ethereum;
+      if (!provider?.request) return;
 
-  // check NFT ownership
+      try {
+        const accounts = await provider.request({ method: 'eth_requestAccounts' });
+        if (accounts?.[0]) setAddress(accounts[0]);
+      } catch (e) {
+        console.warn('No Base wallet connected yet');
+      }
+    }
+
+    getBaseWallet();
+  }, []);
+
+  // ✅ Check NFT ownership
   useEffect(() => {
     if (!address) return;
     setChecking(true);
+
     fetch(`/api/auth/check-nft?address=${address}`)
       .then((r) => r.json())
       .then((d) => {
@@ -52,7 +59,7 @@ export default function Home() {
       .finally(() => setChecking(false));
   }, [address]);
 
-  // sign-in screen
+  // 🟣 Sign-in screen
   if (!user) {
     return (
       <div className={styles.container}>
@@ -72,7 +79,7 @@ export default function Home() {
     );
   }
 
-  // checking ownership
+  // 🟢 Checking ownership
   if (checking) {
     return (
       <div className={styles.container}>
@@ -82,7 +89,7 @@ export default function Home() {
     );
   }
 
-  // authenticated + loaded
+  // 🟢 Authenticated + wallet connected
   return (
     <div className={styles.container}>
       <header className={styles.headerWrapper}>
@@ -119,7 +126,11 @@ export default function Home() {
             <PayToAccess address={address} priceEth={(mintPrice ?? 0.002).toString()} />
           )}
           <p className="text-zinc-400 text-sm mt-4">
-            Or <Link href="/create" className="underline text-amber-300">go create your Monje</Link> now.
+            Or{' '}
+            <Link href="/create" className="underline text-amber-300">
+              go create your Monje
+            </Link>{' '}
+            now.
           </p>
         </div>
       )}
