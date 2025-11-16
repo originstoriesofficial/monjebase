@@ -1,69 +1,65 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { sdk } from '@farcaster/miniapp-sdk';
+import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import Link from 'next/link';
-import styles from './page.module.css';
 import PayToAccess from '../components/PayToAccess';
-
-const BACKEND_ORIGIN =
-  process.env.NEXT_PUBLIC_URL || 'https://monjebase.vercel.app';
+import styles from './page.module.css';
 
 export default function Home() {
-  const [token, setToken] = useState<string | null>(null);
-  const [fid, setFid] = useState<number | null>(null);
+  const { context, setMiniAppReady, isMiniAppReady } = useMiniKit();
   const [address, setAddress] = useState<string | null>(null);
   const [ownsOrigin, setOwnsOrigin] = useState(false);
   const [ownsMonje, setOwnsMonje] = useState(false);
-  const [mintPrice, setMintPrice] = useState<number>(0.002);
-  const [loading, setLoading] = useState(false);
+  const [mintPrice, setMintPrice] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // ✅ Authenticate user via Farcaster Quick Auth
-  async function signIn() {
-    try {
-      const { token } = await sdk.quickAuth.getToken();
-      setToken(token);
-
-      // verify JWT on backend and get FID + address
-      const res = await sdk.quickAuth.fetch(`${BACKEND_ORIGIN}/api/auth`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const data = await res.json();
-      if (data?.fid) {
-        setFid(data.fid);
-      }
-    } catch (err) {
-      console.error('❌ Authentication failed:', err);
-    }
-  }
-
-  function signOut() {
-    setToken(null);
-    setFid(null);
-    setAddress(null);
-  }
-
-  // ✅ Once authenticated, check NFT ownership
+  // Initialize MiniKit + Farcaster MiniApp SDK
   useEffect(() => {
-    if (!fid) return;
+    async function init() {
+      try {
+        // Wait for MiniApp environment to be ready
+        if (!isMiniAppReady) setMiniAppReady();
 
+        // If user context is available, grab their ETH/Base address
+        const ethAddr =
+          (context?.user as any)?.verified_addresses?.eth_addresses?.[0] ??
+          (context?.user as any)?.address ??
+          null;
+
+        if (ethAddr) setAddress(ethAddr);
+
+        // ✅ Tell Farcaster SDK we’re ready (this hides the splash screen)
+        await sdk.actions.ready();
+      } catch (err) {
+        console.error('MiniApp init failed:', err);
+      }
+    }
+    init();
+  }, [context, isMiniAppReady, setMiniAppReady]);
+
+  // Check NFT + token ownership
+  useEffect(() => {
+    if (!address) return;
     setLoading(true);
-    fetch(`/api/check-nft?fid=${fid}`)
+
+    fetch(`/api/check-nft?address=${address}`)
       .then((r) => r.json())
-      .then((data) => {
-        setOwnsOrigin(!!data.ownsOrigin);
-        setOwnsMonje(!!data.ownsMonje);
-        if (data.mintPrice) setMintPrice(data.mintPrice);
+      .then((d) => {
+        setOwnsOrigin(d.ownsOrigin);
+        setOwnsMonje(d.ownsMonje);
+        setMintPrice(d.mintPrice);
       })
-      .catch((err) => console.error('NFT check failed:', err))
+      .catch((err) => console.error('Check failed', err))
       .finally(() => setLoading(false));
-  }, [fid]);
+  }, [address]);
 
   if (loading) {
     return (
       <div className={styles.container}>
+        <Image src="/sphere.svg" alt="Sphere" width={200} height={200} priority />
         <p>Checking your Monje status...</p>
       </div>
     );
@@ -71,62 +67,39 @@ export default function Home() {
 
   return (
     <div className={styles.container}>
-      <header className={styles.headerWrapper}>
-        {!token ? (
-          <button
-            onClick={signIn}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+      <Image src="/sphere.svg" alt="Sphere" width={200} height={200} priority />
+      <h1 className={styles.title}>La Monjería</h1>
+
+      {!address ? (
+        <p>Connect your wallet to begin.</p>
+      ) : ownsMonje ? (
+        <div className="text-center space-y-4">
+          <p className="text-amber-300">🎵 You already own a Monje NFT!</p>
+          <Link
+            href="/music"
+            className="px-4 py-3 bg-amber-600 text-white rounded hover:bg-amber-700 inline-block"
           >
-            Sign In with Farcaster
-          </button>
-        ) : (
-          <div>
-            <p>✅ Authenticated as FID: {fid}</p>
-            <button
-              onClick={signOut}
-              className="mt-2 px-3 py-1 bg-zinc-700 text-white rounded hover:bg-zinc-800"
-            >
-              Sign Out
-            </button>
-          </div>
-        )}
-      </header>
-
-      <div className={styles.content}>
-        <Image src="/sphere.svg" alt="Sphere" width={200} height={200} priority />
-        <h1 className={styles.title}>La Monjería</h1>
-
-        {!token ? (
-          <p>Sign in to access your Monje.</p>
-        ) : ownsMonje ? (
-          <div className="text-center space-y-4">
-            <p className="text-amber-300">🎵 You already own a Monje NFT!</p>
-            <Link
-              href="/music"
-              className="px-4 py-3 bg-amber-600 text-white rounded hover:bg-amber-700 inline-block"
-            >
-              Go to Music Studio
-            </Link>
-          </div>
-        ) : ownsOrigin ? (
-          <div className="text-center space-y-4">
-            <p className="text-green-400">🪙 You hold OriginStory — your mint is free!</p>
-            <Link
-              href="/create"
-              className="px-4 py-3 bg-green-600 text-white rounded hover:bg-green-700 inline-block"
-            >
-              Create & Mint Your Monje
-            </Link>
-          </div>
-        ) : (
-          <div className="text-center space-y-4">
-            <p className="text-amber-400">
-              You don’t hold OriginStory. Mint costs {mintPrice} ETH.
-            </p>
-            <PayToAccess address={address ?? ''} priceEth={mintPrice.toString()} />
-          </div>
-        )}
-      </div>
+            Go to Music Studio
+          </Link>
+        </div>
+      ) : ownsOrigin ? (
+        <div className="text-center space-y-4">
+          <p className="text-green-400">🪙 You hold OriginStory — your mint is free!</p>
+          <Link
+            href="/create"
+            className="px-4 py-3 bg-green-600 text-white rounded hover:bg-green-700 inline-block"
+          >
+            Create & Mint Your Monje
+          </Link>
+        </div>
+      ) : (
+        <div className="text-center space-y-4">
+          <p className="text-amber-400">
+            You don’t hold OriginStory. Mint costs {mintPrice ?? 0.002} ETH.
+          </p>
+          <PayToAccess address={address} priceEth="0.002" />
+        </div>
+      )}
     </div>
   );
 }
