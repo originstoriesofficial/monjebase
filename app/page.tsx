@@ -16,19 +16,17 @@ export default function Home() {
   const [mintPrice, setMintPrice] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Authenticate with Farcaster / Base QuickAuth
   async function handleSignIn() {
     try {
       const { token } = await sdk.quickAuth.getToken();
       setToken(token);
 
-      const res = await sdk.quickAuth.fetch('/api/auth', {
+      const res = await sdk.quickAuth.fetch('/api/verify', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (data?.userFid) setFid(data.userFid);
 
-      // for Base L2 users, pull ETH/Base address from token payload if available
       const payload = JSON.parse(atob(token.split('.')[1]));
       if (payload?.sub) setAddress(payload.sub);
     } catch (err) {
@@ -36,12 +34,10 @@ export default function Home() {
     }
   }
 
-  // ✅ Hide splash once app ready
   useEffect(() => {
     sdk.actions.ready().catch(console.error);
   }, []);
 
-  // ✅ Check NFT/token holdings when user authenticated
   useEffect(() => {
     if (!address) return;
     setLoading(true);
@@ -107,7 +103,10 @@ export default function Home() {
           <p className="text-amber-400">
             You don’t hold OriginStory. Mint costs {mintPrice ?? 0.002} ETH.
           </p>
-          <PayToAccess address={address} priceEth="0.002" />
+          <PayToAccess address={address} priceEth={(mintPrice ?? 0.002).toString()} />
+          <p className="text-zinc-400 text-sm mt-4">
+            Or <Link href="/create" className="underline text-amber-300">go create your Monje</Link> now.
+          </p>
         </div>
       )}
     </div>
