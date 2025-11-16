@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createPublicClient, http, parseAbi } from "viem";
 import { base } from "viem/chains";
 
+// ✅ Use environment variables for flexibility
 const publicClient = createPublicClient({
   chain: base,
   transport: http(process.env.NEXT_PUBLIC_RPC_URL || "https://mainnet.base.org"),
@@ -9,6 +10,9 @@ const publicClient = createPublicClient({
 
 const ORIGIN_CONTRACT = process.env.ORIGIN_CONTRACT as `0x${string}`;
 const MONKERIA_CONTRACT = process.env.MONKERIA_CONTRACT as `0x${string}`;
+
+// ✅ Basic ABI for balanceOf (works for ERC20 + ERC721)
+const abi = parseAbi(["function balanceOf(address) view returns (uint256)"]);
 
 export async function GET(req: NextRequest) {
   const address = req.nextUrl.searchParams.get("address") as `0x${string}` | null;
@@ -18,8 +22,6 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const abi = parseAbi(["function balanceOf(address) view returns (uint256)"]);
-
     // 1️⃣ Check OriginStory (ERC-20 token)
     const originBalance = await publicClient.readContract({
       address: ORIGIN_CONTRACT,
@@ -30,7 +32,7 @@ export async function GET(req: NextRequest) {
 
     const ownsOrigin = BigInt(originBalance || 0n) > 0n;
 
-    // 2️⃣ Check Monkeria NFT (ERC-721)
+    // 2️⃣ Check Monjería NFT (ERC-721)
     const monjeBalance = await publicClient.readContract({
       address: MONKERIA_CONTRACT,
       abi,
@@ -40,8 +42,8 @@ export async function GET(req: NextRequest) {
 
     const ownsMonje = BigInt(monjeBalance || 0n) > 0n;
 
-    // 3️⃣ Define mint logic
-    const mintPrice = ownsOrigin ? 0 : 0.002; // free for OriginStory holders
+    // 3️⃣ Define mint price logic
+    const mintPrice = ownsOrigin ? 0 : 0.002;
 
     return NextResponse.json({
       ownsOrigin,
@@ -50,7 +52,10 @@ export async function GET(req: NextRequest) {
       freeMint: ownsOrigin,
     });
   } catch (err) {
-    console.error("❌ NFT/Token check failed:", err);
-    return NextResponse.json({ error: "Failed to check ownership" }, { status: 500 });
+    console.error("❌ Token/NFT check failed:", err);
+    return NextResponse.json(
+      { error: "Failed to check ownership", details: (err as Error).message },
+      { status: 500 }
+    );
   }
 }

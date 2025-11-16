@@ -4,44 +4,43 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Wallet } from '@coinbase/onchainkit/wallet';
-import { useMiniKit, useQuickAuth } from '@coinbase/onchainkit/minikit';
+import { useMiniKit, useAuthenticate } from '@coinbase/onchainkit/minikit';
 import PayToAccess from '../components/PayToAccess';
 import styles from './page.module.css';
 
 export default function Home() {
   const { setMiniAppReady, isMiniAppReady, context } = useMiniKit();
-  const { data, isLoading, error } = useQuickAuth<{ userFid: string }>('/api/verify');
+  const { signIn } = useAuthenticate();
 
+  const [address, setAddress] = useState<string | null>(null);
   const [ownsOrigin, setOwnsOrigin] = useState(false);
   const [ownsMonje, setOwnsMonje] = useState(false);
   const [mintPrice, setMintPrice] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [address, setAddress] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
 
+  const user = context?.user;
+
+  // initialize Mini App
   useEffect(() => {
     if (!isMiniAppReady) setMiniAppReady();
   }, [isMiniAppReady, setMiniAppReady]);
 
-  const user = context?.user;
-
-  // ✅ Step 1: Resolve custody address server-side via Neynar
+  // simulate wallet connection once Base authenticates
   useEffect(() => {
-    if (!data?.userFid) return;
-    (async () => {
-      try {
-        const res = await fetch(`/api/neynar/user-by-fid?fid=${data.userFid}`);
-        const json = await res.json();
-        setAddress(json.custody_address);
-      } catch (err) {
-        console.error('Failed to resolve address:', err);
-      }
-    })();
-  }, [data?.userFid]);
+    // Coinbase MiniKit handles identity, not wallet address
+    // so we'll pull address from API if available later
+    if (!address && user?.fid) {
+      fetch(`/api/auth/fid-to-address?fid=${user.fid}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => d?.address && setAddress(d.address))
+        .catch(() => {});
+    }
+  }, [user, address]);
 
-  // ✅ Step 2: Check NFT ownership
+  // check NFT ownership
   useEffect(() => {
     if (!address) return;
-    setLoading(true);
+    setChecking(true);
     fetch(`/api/auth/check-nft?address=${address}`)
       .then((r) => r.json())
       .then((d) => {
@@ -50,11 +49,11 @@ export default function Home() {
         setMintPrice(d.mintPrice);
       })
       .catch((err) => console.error('NFT check failed:', err))
-      .finally(() => setLoading(false));
+      .finally(() => setChecking(false));
   }, [address]);
 
-  // ✅ Step 3: Render
-  if (!data && !user) {
+  // sign-in screen
+  if (!user) {
     return (
       <div className={styles.container}>
         <header className={styles.headerWrapper}>
@@ -62,22 +61,28 @@ export default function Home() {
         </header>
 
         <Image src="/sphere.svg" alt="Sphere" width={200} height={200} priority />
-        <h2 className="mb-6 text-lg text-white">Sign in to continue</h2>
-        <p className="text-zinc-400">Use your Base or Farcaster account to sign in.</p>
-        {error && <p className="text-red-400 mt-4">{error.message}</p>}
+        <h2 className="mb-6 text-lg text-white">Sign in with Base</h2>
+        <button
+          onClick={() => signIn()}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg"
+        >
+          Sign In
+        </button>
       </div>
     );
   }
 
-  if (loading || isLoading) {
+  // checking ownership
+  if (checking) {
     return (
       <div className={styles.container}>
         <Image src="/sphere.svg" alt="Sphere" width={200} height={200} priority />
-        <p>Checking your Monje status...</p>
+        <p>Checking your Monje + OriginStory status...</p>
       </div>
     );
   }
 
+  // authenticated + loaded
   return (
     <div className={styles.container}>
       <header className={styles.headerWrapper}>
@@ -88,7 +93,7 @@ export default function Home() {
       <h1 className={styles.title}>La Monjería</h1>
 
       <p className="text-white mb-4">
-        Welcome, <strong>@{user?.username ?? data?.userFid}</strong>
+        Welcome, <strong>@{user?.username ?? address ?? 'Guest'}</strong>
       </p>
 
       {ownsMonje ? (
@@ -114,11 +119,7 @@ export default function Home() {
             <PayToAccess address={address} priceEth={(mintPrice ?? 0.002).toString()} />
           )}
           <p className="text-zinc-400 text-sm mt-4">
-            Or{' '}
-            <Link href="/create" className="underline text-amber-300">
-              go create your Monje
-            </Link>{' '}
-            now.
+            Or <Link href="/create" className="underline text-amber-300">go create your Monje</Link> now.
           </p>
         </div>
       )}
