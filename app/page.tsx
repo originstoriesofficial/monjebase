@@ -1,49 +1,65 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { useMiniKit } from '@coinbase/onchainkit/minikit';
+import { sdk } from '@farcaster/miniapp-sdk';
+import Link from 'next/link';
 import styles from './page.module.css';
 import PayToAccess from '../components/PayToAccess';
-import Link from 'next/link';
+
+const BACKEND_ORIGIN =
+  process.env.NEXT_PUBLIC_URL || 'https://monjebase.vercel.app';
 
 export default function Home() {
-  const { context, setMiniAppReady, isMiniAppReady } = useMiniKit();
-
-  // ✅ get wallet address safely (skip failed farcaster lookups)
-  const address =
-    (context?.user?.verified_addresses?.eth_addresses?.[0] as string | undefined) ??
-    (context?.user?.address as string | undefined) ??
-    null;
-
-  const username = context?.user?.username ?? '';
-
+  const [token, setToken] = useState<string | null>(null);
+  const [fid, setFid] = useState<number | null>(null);
+  const [address, setAddress] = useState<string | null>(null);
   const [ownsOrigin, setOwnsOrigin] = useState(false);
   const [ownsMonje, setOwnsMonje] = useState(false);
-  const [mintPrice, setMintPrice] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [mintPrice, setMintPrice] = useState<number>(0.002);
+  const [loading, setLoading] = useState(false);
 
-  // ✅ ensure MiniKit ready (but skip waiting for neynar)
-  useEffect(() => {
-    if (!isMiniAppReady) setMiniAppReady();
-  }, [isMiniAppReady, setMiniAppReady]);
+  // ✅ Authenticate user via Farcaster Quick Auth
+  async function signIn() {
+    try {
+      const { token } = await sdk.quickAuth.getToken();
+      setToken(token);
 
-  // ✅ only query your own /api/check-nft (no external farcaster/neynar calls)
+      // verify JWT on backend and get FID + address
+      const res = await sdk.quickAuth.fetch(`${BACKEND_ORIGIN}/api/auth`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await res.json();
+      if (data?.fid) {
+        setFid(data.fid);
+      }
+    } catch (err) {
+      console.error('❌ Authentication failed:', err);
+    }
+  }
+
+  function signOut() {
+    setToken(null);
+    setFid(null);
+    setAddress(null);
+  }
+
+  // ✅ Once authenticated, check NFT ownership
   useEffect(() => {
-    if (!address) return;
+    if (!fid) return;
+
     setLoading(true);
-    fetch(`/api/check-nft?address=${address}`)
+    fetch(`/api/check-nft?fid=${fid}`)
       .then((r) => r.json())
-      .then((d) => {
-        setOwnsOrigin(!!d.ownsOrigin);
-        setOwnsMonje(!!d.ownsMonje);
-        setMintPrice(d.mintPrice ?? 0.002);
+      .then((data) => {
+        setOwnsOrigin(!!data.ownsOrigin);
+        setOwnsMonje(!!data.ownsMonje);
+        if (data.mintPrice) setMintPrice(data.mintPrice);
       })
-      .catch((err) => {
-        console.error('Check failed:', err);
-      })
+      .catch((err) => console.error('NFT check failed:', err))
       .finally(() => setLoading(false));
-  }, [address]);
+  }, [fid]);
 
   if (loading) {
     return (
@@ -56,27 +72,32 @@ export default function Home() {
   return (
     <div className={styles.container}>
       <header className={styles.headerWrapper}>
-        {username ? (
-          <p>Welcome, {username}</p>
-        ) : address ? (
-          <p>{address.slice(0, 6)}...{address.slice(-4)}</p>
+        {!token ? (
+          <button
+            onClick={signIn}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Sign In with Farcaster
+          </button>
         ) : (
-          <p>Connect wallet...</p>
+          <div>
+            <p>✅ Authenticated as FID: {fid}</p>
+            <button
+              onClick={signOut}
+              className="mt-2 px-3 py-1 bg-zinc-700 text-white rounded hover:bg-zinc-800"
+            >
+              Sign Out
+            </button>
+          </div>
         )}
       </header>
 
       <div className={styles.content}>
-        <Image
-          src="/sphere.svg"
-          alt="Sphere"
-          width={200}
-          height={200}
-          priority
-        />
+        <Image src="/sphere.svg" alt="Sphere" width={200} height={200} priority />
         <h1 className={styles.title}>La Monjería</h1>
 
-        {!address ? (
-          <p>Sign in with Base to begin.</p>
+        {!token ? (
+          <p>Sign in to access your Monje.</p>
         ) : ownsMonje ? (
           <div className="text-center space-y-4">
             <p className="text-amber-300">🎵 You already own a Monje NFT!</p>
@@ -100,9 +121,9 @@ export default function Home() {
         ) : (
           <div className="text-center space-y-4">
             <p className="text-amber-400">
-              You don’t hold OriginStory. Mint costs {mintPrice ?? 0.002} ETH.
+              You don’t hold OriginStory. Mint costs {mintPrice} ETH.
             </p>
-            <PayToAccess address={address} priceEth="0.002" />
+            <PayToAccess address={address ?? ''} priceEth={mintPrice.toString()} />
           </div>
         )}
       </div>
