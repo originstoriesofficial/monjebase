@@ -1,11 +1,11 @@
 // app/api/resolve-base-address/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createPublicClient, http } from "viem";
-import { base } from "viem/chains";
+import { mainnet } from "viem/chains";
 
 const client = createPublicClient({
-  chain: base,
-  transport: http("https://mainnet.base.org"),
+  chain: mainnet,
+  transport: http("https://eth.llamarpc.com"), // fast reliable RPC
 });
 
 export async function GET(req: NextRequest) {
@@ -19,9 +19,10 @@ export async function GET(req: NextRequest) {
     if (!address) {
       return NextResponse.json({ error: "No address found for name" }, { status: 404 });
     }
+
     return NextResponse.json({ address });
   } catch (err) {
-    console.error("ENS/Base name resolve failed:", err);
-    return NextResponse.json({ error: "Resolve failed" }, { status: 500 });
+    console.error("ENS resolution failed:", err);
+    return NextResponse.json({ error: "Failed to resolve ENS name" }, { status: 500 });
   }
 }
