@@ -1,57 +1,44 @@
-// app/api/auth/check-nft/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createPublicClient, http, parseAbi } from "viem";
-import { base } from "viem/chains";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
 
-// 🧠 Your real contract addresses here
-const ORIGIN_CONTRACT = process.env.ORIGIN_CONTRACT as `0x${string}`; // ERC-20
-const MONJE_NFT_CONTRACT = process.env.MONJE_NFT_CONTRACT as `0x${string}`; // ERC-721 or 1155
-
-const client = createPublicClient({
-  chain: base,
-  transport: http(process.env.NEXT_PUBLIC_BASE_RPC_URL || "https://mainnet.base.org"),
+// 🚀 ENS client for .eth lookups
+const ensClient = createPublicClient({
+  chain: mainnet,
+  transport: http("https://eth.llamarpc.com"),
 });
 
 export async function GET(req: NextRequest) {
-  const address = req.nextUrl.searchParams.get("address") as `0x${string}` | null;
-  if (!address) {
-    return NextResponse.json({ error: "Missing address" }, { status: 400 });
+  const name = req.nextUrl.searchParams.get("name");
+  if (!name) {
+    return NextResponse.json({ error: "Missing name" }, { status: 400 });
   }
 
   try {
-    const abi = parseAbi(["function balanceOf(address) view returns (uint256)"]);
+    const lowerName = name.toLowerCase();
 
-    // ✅ Check OriginStory ERC-20
-    const originBalance = await client.readContract({
-      address: ORIGIN_CONTRACT,
-      abi,
-      functionName: "balanceOf",
-      args: [address],
-    });
+    // 🟣 1️⃣ ENS: works for standard .eth names
+    if (lowerName.endsWith(".eth")) {
+      const address = await ensClient.getEnsAddress({ name: lowerName });
+      if (address) {
+        return NextResponse.json({ source: "ens", address });
+      }
+    }
 
-    const ownsOrigin = BigInt(originBalance ?? 0n) > 0n;
+    // 🔵 2️⃣ Base Name Service: works for .base.eth names
+    const bnsRes = await fetch(`https://api.base.org/names/${encodeURIComponent(lowerName)}`);
+    if (bnsRes.ok) {
+      const bnsData = await bnsRes.json();
+      const address = bnsData?.owner || bnsData?.resolved_address;
+      if (address) {
+        return NextResponse.json({ source: "base", address });
+      }
+    }
 
-    // ✅ Check Monje NFT ERC-721
-    const monjeBalance = await client.readContract({
-      address: MONJE_NFT_CONTRACT,
-      abi,
-      functionName: "balanceOf",
-      args: [address],
-    });
-
-    const ownsMonje = BigInt(monjeBalance ?? 0n) > 0n;
-
-    // ✅ Determine mint price
-    const mintPrice = ownsOrigin ? 0 : 0.002;
-
-    return NextResponse.json({
-      ownsOrigin,
-      ownsMonje,
-      mintPrice,
-      freeMint: ownsOrigin,
-    });
+    // ⚫ 3️⃣ No match found
+    return NextResponse.json({ error: `No address found for ${name}` }, { status: 404 });
   } catch (err) {
-    console.error("❌ NFT/Token check failed:", err);
-    return NextResponse.json({ error: "Failed to check ownership" }, { status: 500 });
+    console.error("❌ Name resolution failed:", err);
+    return NextResponse.json({ error: "Name resolution failed" }, { status: 500 });
   }
 }
