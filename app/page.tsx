@@ -3,38 +3,45 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
-import { useAccount } from 'wagmi';
 import styles from './page.module.css';
 import PayToAccess from '../components/PayToAccess';
 import Link from 'next/link';
 
 export default function Home() {
-  const { address, isConnected } = useAccount();
-  const { setMiniAppReady, isMiniAppReady } = useMiniKit();
+  const { context, setMiniAppReady, isMiniAppReady } = useMiniKit();
+
+  // ✅ get wallet address safely (skip failed farcaster lookups)
+  const address =
+    (context?.user?.verified_addresses?.eth_addresses?.[0] as string | undefined) ??
+    (context?.user?.address as string | undefined) ??
+    null;
+
+  const username = context?.user?.username ?? '';
 
   const [ownsOrigin, setOwnsOrigin] = useState(false);
   const [ownsMonje, setOwnsMonje] = useState(false);
   const [mintPrice, setMintPrice] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Ensure MiniKit initializes for Base Mini App environment
+  // ✅ ensure MiniKit ready (but skip waiting for neynar)
   useEffect(() => {
     if (!isMiniAppReady) setMiniAppReady();
   }, [isMiniAppReady, setMiniAppReady]);
 
-  // ✅ Check OriginStory + Monje NFT ownership
+  // ✅ only query your own /api/check-nft (no external farcaster/neynar calls)
   useEffect(() => {
     if (!address) return;
     setLoading(true);
-
     fetch(`/api/check-nft?address=${address}`)
       .then((r) => r.json())
       .then((d) => {
-        setOwnsOrigin(d.ownsOrigin);
-        setOwnsMonje(d.ownsMonje);
-        setMintPrice(d.mintPrice);
+        setOwnsOrigin(!!d.ownsOrigin);
+        setOwnsMonje(!!d.ownsMonje);
+        setMintPrice(d.mintPrice ?? 0.002);
       })
-      .catch((err) => console.error('Check failed:', err))
+      .catch((err) => {
+        console.error('Check failed:', err);
+      })
       .finally(() => setLoading(false));
   }, [address]);
 
@@ -49,19 +56,27 @@ export default function Home() {
   return (
     <div className={styles.container}>
       <header className={styles.headerWrapper}>
-        {isConnected ? (
-          <p>Welcome, {address?.slice(0, 6)}...{address?.slice(-4)}</p>
+        {username ? (
+          <p>Welcome, {username}</p>
+        ) : address ? (
+          <p>{address.slice(0, 6)}...{address.slice(-4)}</p>
         ) : (
-          <p>Connect your Base wallet</p>
+          <p>Connect wallet...</p>
         )}
       </header>
 
       <div className={styles.content}>
-        <Image src="/sphere.svg" alt="Sphere" width={200} height={200} priority />
+        <Image
+          src="/sphere.svg"
+          alt="Sphere"
+          width={200}
+          height={200}
+          priority
+        />
         <h1 className={styles.title}>La Monjería</h1>
 
-        {!isConnected ? (
-          <p>Connect your wallet to begin.</p>
+        {!address ? (
+          <p>Sign in with Base to begin.</p>
         ) : ownsMonje ? (
           <div className="text-center space-y-4">
             <p className="text-amber-300">🎵 You already own a Monje NFT!</p>
@@ -87,7 +102,7 @@ export default function Home() {
             <p className="text-amber-400">
               You don’t hold OriginStory. Mint costs {mintPrice ?? 0.002} ETH.
             </p>
-            <PayToAccess address={address!} priceEth="0.002" />
+            <PayToAccess address={address} priceEth="0.002" />
           </div>
         )}
       </div>
