@@ -5,15 +5,37 @@ import { useHasMonjeNFT } from '@/lib/hooks/useHasMonjeNFT';
 import { useAccount } from 'wagmi';
 
 const styles = [
-  'Electronic', 'Hip-Hop', 'Trap', 'Lo-fi', 'Jazz', 'Ambient',
-  'Synthwave', 'Orchestral', 'Fantasy', 'Cyberpunk', 'Retro', 'Rock',
-  'Funk', 'Drill', 'Dubstep', 'Techno', 'Industrial', 'Afrobeats',
-  'Pop', 'Ballad', 'Hardstyle', 'Epic', 'Darkwave', 'R&B', 'Chillwave',
-  'Glitch', 'Punk', 'EDM', 'Metal', 'Reggaeton', 'Acoustic', 'Minimal',
-  'Experimental', 'Dream Pop', 'Gospel', 'Neo Soul', 'Boom Bap',
-  'Future Bass', 'Trap Soul', 'Post-Rock', 'Shoegaze', 'Vaporwave',
-  'Bossa Nova', 'Trance',
+  // Core Argentina + LATAM
+  'Tango', 'Tango Electronic',
+  'Cumbia', 'Cumbia 420',
+  'Reggaeton', 'Neo-Reggaeton', 'Dembow',
+  'Salsa', 'Bachata', 'Bachata Fusion',
+  'Merengue', 'Samba', 'Bossa Nova',
+  'Latin Pop', 'Latin Trap', 'Latin House',
+  'Latin Jazz', 'Latin Soul', 'Latin R&B',
+  'Brazilian Funk (Funk Carioca)', 'Afro-Latin',
+
+  // Contemporary LATAM / Andean
+  'Folklore Argentino', 'Folktronica',
+  'Andean Electronic', 'Electro-Latino',
+  'Bolero', 'Corridos Tumbados',
+
+  // Select hybrid / modern fusions
+  'Tango Techno',
+  'Cumbia Electronica',
+  'Reggaeton Ambient',
+  'Reggaeton Jazz',
+  'Reggaeton Gospel',
+  'Latin Chillwave',
+  'Latin Lo-Fi',
+  'Andean Techno',
+  'Amazonian Bass',
+  'Latin Drill',
+  'Bossa Nova Electronic',
+  'Bossa Nova Trap',
+  'Bossa Nova House'
 ];
+
 
 export default function MusicPage() {
   const { isConnected } = useAccount();

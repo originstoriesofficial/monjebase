@@ -16,7 +16,6 @@ export default function Home() {
   const [ownsMonje, setOwnsMonje] = useState(false);
   const [mintPrice, setMintPrice] = useState<number | null>(null);
   const [checking, setChecking] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
 
   /** ✅ Initialize Base Mini App */
   useEffect(() => {
@@ -43,28 +42,22 @@ export default function Home() {
     setChecking(true);
 
     fetch(`/api/auth/check-nft?address=${address}`)
-      .then((r) => r.json())
-      .then((d) => {
-        setOwnsOrigin(d.ownsOrigin);
-        setOwnsMonje(d.ownsMonje);
-        setMintPrice(d.mintPrice);
+      .then(async (r) => {
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Ownership check failed');
+        console.log('✅ Ownership data:', d);
+        setOwnsOrigin(!!d.ownsOrigin);
+        setOwnsMonje(!!d.ownsMonje);
+        setMintPrice(d.mintPrice ?? 0.002);
       })
-      .catch((err) => console.error('NFT check failed:', err))
+      .catch((err) => {
+        console.error('NFT check failed:', err);
+        setOwnsOrigin(false);
+        setOwnsMonje(false);
+        setMintPrice(0.002);
+      })
       .finally(() => setChecking(false));
   }, [address]);
-
-  /** 🔄 Refresh Base user context manually */
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      // Re-run the MiniKit setup to refresh the Base app session
-      setMiniAppReady();
-    } catch (err) {
-      console.error('Failed to refresh Base identity:', err);
-    } finally {
-      setRefreshing(false);
-    }
-  };
 
   // 🟣 Not signed in
   if (!user) {
@@ -72,16 +65,9 @@ export default function Home() {
       <div className={styles.container}>
         <Image src="/sphere.svg" alt="Sphere" width={200} height={200} priority />
         <h2 className="mb-6 text-lg text-white">Sign in with Base</h2>
-        <p className="text-gray-400 text-sm mb-4">
+        <p className="text-gray-400 text-sm">
           Open this app inside the <strong>Base mobile app</strong> to connect automatically.
         </p>
-        <button
-          onClick={handleRefresh}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md text-sm"
-          disabled={refreshing}
-        >
-          {refreshing ? 'Refreshing...' : 'Refresh Base Identity'}
-        </button>
       </div>
     );
   }
@@ -112,14 +98,6 @@ export default function Home() {
           {address}
         </p>
       )}
-
-      <button
-        onClick={handleRefresh}
-        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md mb-4 text-sm"
-        disabled={refreshing}
-      >
-        {refreshing ? 'Refreshing...' : 'Refresh Base Identity'}
-      </button>
 
       {ownsMonje ? (
         <div className="text-center space-y-4">
