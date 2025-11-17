@@ -41,6 +41,18 @@
     }
   }
 
+  /* === 🎨 Monjería theme === */
+  :root {
+    --bg-gradient: linear-gradient(180deg, #0c0020 0%, #15003a 100%);
+    --accent-amber: #ffb800;
+    --accent-purple: #9b5eff;
+    --accent-blue: #4b6aff;
+    --text-primary: #ffffff;
+    --text-secondary: #c3b9d8;
+    --card-bg: rgba(255, 255, 255, 0.04);
+    --border-glow: 0 0 8px rgba(155, 94, 255, 0.4);
+  }
+
   * {
     box-sizing: border-box;
     padding: 0;

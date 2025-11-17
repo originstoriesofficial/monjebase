@@ -36,7 +36,7 @@ export default function Home() {
     }
   }, [user, address]);
 
-  // ❌ Ownership check logic (kept for dev reference)
+  // ❌ Ownership check logic (kept for future use)
   /*
   useEffect(() => {
     if (!address) return;
@@ -61,19 +61,20 @@ export default function Home() {
   }, [address]);
   */
 
-  // 🟢 Main landing page
+  // 🟢 Main Landing Page
   return (
     <div className={styles.container}>
-      <Image src="/sphere.svg" alt="Sphere" width={200} height={200} priority />
+      <Image src="/castle.svg" alt="Monjería Castle" width={140} height={140} priority />
       <h1 className={styles.title}>La Monjería</h1>
 
       <p className="text-zinc-300 text-center mb-8 max-w-md">
-        A creative hub on Base where you can mint your own Monje NFT and play
-        your generated beats. Powered by AI + Base + OriginStory.
+        A creative hub on <span className="text-amber-400 font-medium">Base</span> where you can
+        mint your <span className="text-purple-400 font-medium">Monje NFT</span> and play your
+        generated beats. Powered by AI + OriginStory.
       </p>
 
       {user && (
-        <p className="text-gray-400 text-sm mb-6">
+        <p className="text-gray-400 text-sm mb-6 text-center">
           Connected as <strong>@{user?.username ?? 'base user'}</strong>
           {address && (
             <>
@@ -87,20 +88,20 @@ export default function Home() {
       <div className="flex flex-col space-y-4 w-full max-w-xs">
         <Link
           href="/create"
-          className="bg-green-600 hover:bg-green-700 text-white text-center py-3 rounded-lg font-semibold transition"
+          className={`${styles.btnPrimary} text-center`}
         >
           🎨 Create Your Monje
         </Link>
 
         <Link
           href="/score"
-          className="bg-amber-600 hover:bg-amber-700 text-white text-center py-3 rounded-lg font-semibold transition"
+          className={`${styles.btnSecondary} text-center`}
         >
           🎵 Play Music Studio
         </Link>
       </div>
 
-      {/* ❌ Old conditional display (preserved for devs)
+      {/* ❌ Previous conditional display logic (preserved for dev reference)
       {ownsMonje ? (
         <div className="text-center space-y-4 mt-8">
           <p className="text-amber-300">🎵 You already own a Monje NFT!</p>

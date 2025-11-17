@@ -1,39 +1,69 @@
 .container {
-  display: grid;
-  grid-template-rows: auto 1fr;
-  min-height: 100vh;
-}
-
-.headerWrapper {
-  display: flex;
-  justify-content: flex-end;
-  padding: 1rem;
-}
-
-.content {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding-bottom: 5vh;
+  text-align: center;
+  min-height: 100vh;
+  background: var(--bg-gradient);
+  color: var(--text-primary);
+  padding: 2rem;
 }
 
 .title {
-  font-size: clamp(2rem, 8vw, 80px);
-  font-weight: 500;
-  letter-spacing: -0.02em;
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(90deg, var(--accent-purple), var(--accent-amber));
+  background-clip: text;              /* ✅ standard property */
+  -webkit-background-clip: text;      /* ✅ Safari / Chrome support */
+  -webkit-text-fill-color: transparent;
+  color: transparent;                 /* ✅ fallback */
+  margin-bottom: 0.5rem;
 }
 
-.componentsTitle {
-  font-weight: 600;
+.card {
+  background: var(--card-bg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: var(--border-glow);
+  backdrop-filter: blur(16px);
+  width: 100%;
+  max-width: 420px;
   margin-top: 2rem;
+  transition: transform 0.2s ease;
 }
 
-.components {
-  list-style-type: disc;
-  margin-top: 0.75rem;
+.card:hover {
+  transform: translateY(-2px);
 }
 
-.components a:hover {
-  text-decoration: underline;
+.btnPrimary {
+  background: var(--accent-purple);
+  color: white;
+  padding: 0.9rem 1.2rem;
+  border-radius: 12px;
+  font-weight: 600;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.btnPrimary:hover {
+  background: var(--accent-amber);
+  color: black;
+}
+
+.btnSecondary {
+  background: var(--accent-blue);
+  color: white;
+  padding: 0.9rem 1.2rem;
+  border-radius: 12px;
+  font-weight: 600;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.btnSecondary:hover {
+  background: var(--accent-amber);
+  color: black;
 }
