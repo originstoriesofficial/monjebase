@@ -5,10 +5,11 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAccount, useWriteContract } from 'wagmi';
 import { parseEther } from 'viem';
-import { base } from 'viem/chains';
+import { base, baseSepolia } from 'viem/chains';
 import { MONKERIA_ABI } from '@/lib/contract';
 
 const MONKERIA_ADDRESS = '0x3D1E34Aa63d26f7b1307b96a612a40e5F8297AC7';
+const CHAIN = process.env.NODE_ENV === 'production' ? base : baseSepolia;
 
 const QUESTIONS = [
   { key: 'animal', label: '🐾 What animal type is your Monje?' },
@@ -42,7 +43,7 @@ export default function CreatePage() {
   // ✅ Check if user holds OriginStory token
   useEffect(() => {
     if (!address) return;
-    fetch(`/api/check-nft?address=${address}`)
+    fetch(`/api/auth/check-nft?address=${address}`)
       .then((r) => r.json())
       .then((d) => setOwnsOrigin(d.ownsOrigin))
       .catch((err) => console.error('Origin check failed:', err));
@@ -109,7 +110,7 @@ export default function CreatePage() {
     try {
       setMinting(true);
       await writeContractAsync({
-        chainId: base.id,
+        chainId: CHAIN.id,
         address: MONKERIA_ADDRESS,
         abi: MONKERIA_ABI,
         functionName: 'mint',
@@ -118,7 +119,7 @@ export default function CreatePage() {
       });
 
       alert(ownsOrigin ? '✅ Free Mint successful!' : '✅ Mint successful!');
-      router.push('/music');
+      router.push('/score');
     } catch (err) {
       console.error('❌ Mint failed:', err);
       alert('Mint failed. Try again.');
