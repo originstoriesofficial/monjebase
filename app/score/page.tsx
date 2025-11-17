@@ -2,9 +2,10 @@
 
 import React, { useState } from 'react';
 import { useAccount } from 'wagmi';
+import styles from './score.module.css';
 // import { useHasMonjeNFT } from '@/lib/hooks/useHasMonjeNFT'; // ❌ Commented out for now
 
-const styles = [
+const musicStyles = [
   'Tango', 'Tango Electronic', 'Cumbia', 'Cumbia 420', 'Reggaeton', 'Neo-Reggaeton', 'Dembow',
   'Salsa', 'Bachata', 'Bachata Fusion', 'Merengue', 'Samba', 'Bossa Nova',
   'Latin Pop', 'Latin Trap', 'Latin House', 'Latin Jazz', 'Latin Soul', 'Latin R&B',
@@ -12,7 +13,7 @@ const styles = [
   'Andean Electronic', 'Electro-Latino', 'Bolero', 'Corridos Tumbados', 'Tango Techno',
   'Cumbia Electronica', 'Reggaeton Ambient', 'Reggaeton Jazz', 'Reggaeton Gospel',
   'Latin Chillwave', 'Latin Lo-Fi', 'Andean Techno', 'Amazonian Bass',
-  'Latin Drill', 'Bossa Nova Electronic', 'Bossa Nova Trap', 'Bossa Nova House'
+  'Latin Drill', 'Bossa Nova Electronic', 'Bossa Nova Trap', 'Bossa Nova House',
 ];
 
 export default function MusicPage() {
@@ -22,30 +23,30 @@ export default function MusicPage() {
   // 🔒 Wallet not connected
   if (!isConnected) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-white">
-        <p className="text-zinc-400 text-lg">🔗 Please connect your wallet to continue.</p>
+      <div className={styles.center}>
+        <p className={styles.muted}>🔗 Please connect your wallet to continue.</p>
       </div>
     );
   }
 
-  /*  // ❌ NFT gating (commented for now)
+  /* ❌ NFT gating (commented for now)
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-white">
-        <p className="text-zinc-400">Checking NFT ownership...</p>
+      <div className={styles.center}>
+        <p className={styles.muted}>Checking NFT ownership...</p>
       </div>
     );
   }
 
   if (!hasNFT) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-center text-white">
-        <p className="text-amber-300 text-xl mb-4">🧙 Access Restricted</p>
-        <p className="text-zinc-400 max-w-md">
+      <div className={styles.center}>
+        <p className={styles.restrictedTitle}>🧙 Access Restricted</p>
+        <p className={styles.restrictedText}>
           You must hold a <strong>Monje NFT</strong> to unlock the Music Studio.
           <br />
           Go mint your character first on the{' '}
-          <a href="/create" className="text-amber-400 underline">Create page</a>.
+          <a href="/create" className={styles.link}>Create page</a>.
         </p>
       </div>
     );
@@ -60,7 +61,7 @@ export default function MusicPage() {
 function MusicComposer() {
   const [prompt, setPrompt] = useState('');
   const [lyrics, setLyrics] = useState('');
-  const [style, setStyle] = useState(styles[0]);
+  const [style, setStyle] = useState(musicStyles[0]);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,74 +97,73 @@ function MusicComposer() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-6 min-h-screen bg-[var(--bg-gradient)] text-white">
-      <h1 className="text-3xl font-bold mb-4 text-amber-300 drop-shadow-[var(--border-glow)]">
-        🎶 Create Your Monje Anthem
-      </h1>
+    <div className={styles.container}>
+      <h1 className={styles.title}>🎶 Create Your Monje Anthem</h1>
 
-      <div className="w-full max-w-2xl bg-[var(--card-bg)] p-6 rounded-xl border border-amber-600 shadow-lg space-y-4">
+      <div className={styles.card}>
         {/* 🎼 Style */}
-        <label className="block text-sm text-amber-300 text-left">
-          Style
-        </label>
+        <label className={styles.label}>Style</label>
         <select
-          className="w-full p-3 bg-zinc-900 rounded border border-zinc-700 focus:ring-2 focus:ring-amber-600 outline-none"
+          className={styles.select}
           value={style}
           onChange={(e) => setStyle(e.target.value)}
         >
-          {styles.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
+          {musicStyles.map((s) => (
+            <option key={s} value={s}>{s}</option>
           ))}
         </select>
 
         {/* 📝 Prompt */}
-        <label className="block text-sm text-amber-300 text-left">Lore / Story</label>
+        <label className={styles.label}>Lore / Story</label>
         <textarea
-          className="w-full p-3 bg-zinc-900 rounded border border-zinc-700 text-white"
+          className={styles.textarea}
           rows={3}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Describe your Monje’s journey..."
+          placeholder="Describe your Monje’s story..."
         />
 
         {/* 🎤 Lyrics */}
-        <label className="block text-sm text-amber-300 text-left mt-2">
-          Optional Lyrics
-        </label>
+        <label className={styles.label}>Optional Lyrics</label>
         <textarea
-          className="w-full p-3 bg-zinc-900 rounded border border-zinc-700 text-white"
+          className={styles.textarea}
           rows={2}
           value={lyrics}
           onChange={(e) => setLyrics(e.target.value)}
-          placeholder="Add lyrics if you’d like..."
+          placeholder="Add lyrics if you'd like..."
         />
 
         {/* ▶️ Button */}
         <button
           onClick={generateSong}
           disabled={loading || !prompt}
-          className="w-full mt-4 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold transition disabled:opacity-50"
+          className={styles.button}
         >
           {loading ? '🎧 Generating...' : '🎼 Generate Anthem'}
         </button>
 
-        {error && <p className="text-red-400 text-center mt-3">{error}</p>}
+        {error && <p className={styles.error}>{error}</p>}
 
         {audioUrl && (
-          <div className="mt-4 text-center">
-            <audio controls src={audioUrl} className="w-full rounded-lg" />
+          <div className={styles.audioBox}>
+            <audio controls src={audioUrl} className={styles.audio} />
             <a
               href={audioUrl}
               download={`monje-anthem-${Date.now()}.mp3`}
-              className="mt-3 inline-block px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700"
+              className={styles.download}
             >
               ⬇️ Download Anthem
             </a>
           </div>
         )}
       </div>
-    </div>
-  );
-}
+
+      {/* Bottom Navigation */}
+      <nav className={styles.navbar}>
+        <a href="/" className={styles.navItem}>🏰 Home</a>
+        <a href="/create" className={styles.navItem}>🎨 Create</a>
+        <a href="/score" className={styles.navItem}>🎵 Play</a>
+      </nav>
+    </div> // ✅ closing root div
+  ); // ✅ closing return
+} // ✅ closing component

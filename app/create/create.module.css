@@ -1,0 +1,110 @@
+.container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: var(--bg-gradient);
+    color: var(--text-primary);
+    padding: 2rem 1rem;
+    text-align: center;
+  }
+  
+  .title {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 2rem;
+    background: linear-gradient(90deg, var(--accent-purple), var(--accent-amber));
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+  
+  .question {
+    font-size: 1.2rem;
+    color: var(--accent-amber);
+    margin-bottom: 1rem;
+  }
+  
+  .input {
+    width: 100%;
+    max-width: 320px;
+    padding: 0.8rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-size: 1rem;
+    text-align: center;
+  }
+  
+  .input:focus {
+    outline: none;
+    border-color: var(--accent-purple);
+    box-shadow: 0 0 6px var(--accent-purple);
+  }
+  
+  .hint {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+  
+  .image {
+    width: 100%;
+    max-width: 320px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+  }
+  
+  .button {
+    width: 100%;
+    max-width: 320px;
+    padding: 0.9rem;
+    border-radius: 10px;
+    font-weight: 600;
+    color: #fff;
+    margin-top: 1rem;
+    transition: all 0.2s ease;
+  }
+  
+  .freeMint {
+    background: var(--accent-green, #22c55e);
+  }
+  
+  .paidMint {
+    background: var(--accent-amber);
+  }
+  
+  .button:hover {
+    filter: brightness(1.1);
+  }
+  
+  .loading {
+    margin-top: 1rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+  
+  .navbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.6rem 0;
+    backdrop-filter: blur(8px);
+  }
+  
+  .navItem {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+  
+  .navItem:hover {
+    color: var(--accent-amber);
+  }
+  

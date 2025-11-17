@@ -61,18 +61,16 @@ export default function Home() {
   }, [address]);
   */
 
-  // 🟢 Main Landing Page
+  // 🟢 Minimal, production landing page
   return (
     <div className={styles.container}>
-      <Image src="/castle.svg" alt="Monjería Castle" width={140} height={140} priority />
+      {/* Hero Icon */}
+      <Image src="/castle.svg" alt="La Monjería" width={120} height={120} priority />
+
+      {/* Title */}
       <h1 className={styles.title}>La Monjería</h1>
 
-      <p className="text-zinc-300 text-center mb-8 max-w-md">
-        A creative hub on <span className="text-amber-400 font-medium">Base</span> where you can
-        mint your <span className="text-purple-400 font-medium">Monje NFT</span> and play your
-        generated beats. Powered by AI + OriginStory.
-      </p>
-
+      {/* Optional user info */}
       {user && (
         <p className="text-gray-400 text-sm mb-6 text-center">
           Connected as <strong>@{user?.username ?? 'base user'}</strong>
@@ -85,23 +83,17 @@ export default function Home() {
         </p>
       )}
 
-      <div className="flex flex-col space-y-4 w-full max-w-xs">
-        <Link
-          href="/create"
-          className={`${styles.btnPrimary} text-center`}
-        >
-          🎨 Create Your Monje
+      {/* Core Actions */}
+      <div className={styles.actions}>
+        <Link href="/create" className={`${styles.button} ${styles.primary}`}>
+          🎨 Create
         </Link>
-
-        <Link
-          href="/score"
-          className={`${styles.btnSecondary} text-center`}
-        >
-          🎵 Play Music Studio
+        <Link href="/score" className={`${styles.button} ${styles.secondary}`}>
+          🎵 Play
         </Link>
       </div>
 
-      {/* ❌ Previous conditional display logic (preserved for dev reference)
+      {/* ❌ Old NFT logic preserved for devs
       {ownsMonje ? (
         <div className="text-center space-y-4 mt-8">
           <p className="text-amber-300">🎵 You already own a Monje NFT!</p>
@@ -128,11 +120,12 @@ export default function Home() {
       )}
       */}
 
-      <footer className="mt-12 text-xs text-zinc-500 text-center">
-        Built with <span className="text-amber-400">Base</span> •{' '}
-        <span className="text-green-400">OriginStory</span> •{' '}
-        <span className="text-blue-400">AI</span>
-      </footer>
+      {/* Bottom Nav */}
+      <nav className={styles.navbar}>
+        <Link href="/" className={styles.navItem}>🏰 Home</Link>
+        <Link href="/create" className={styles.navItem}>🎨 Create</Link>
+        <Link href="/score" className={styles.navItem}>🎵 Play</Link>
+      </nav>
     </div>
   );
 }

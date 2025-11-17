@@ -7,6 +7,7 @@ import { useAccount, useWriteContract } from 'wagmi';
 import { parseEther } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 import { MONKERIA_ABI } from '@/lib/contract';
+import styles from './create.module.css';
 
 const MONKERIA_ADDRESS = '0x3D1E34Aa63d26f7b1307b96a612a40e5F8297AC7';
 const CHAIN = process.env.NODE_ENV === 'production' ? base : baseSepolia;
@@ -32,7 +33,12 @@ export default function CreatePage() {
 
   const [ownsOrigin, setOwnsOrigin] = useState(false);
   const [step, setStep] = useState(0);
-  const [form, setForm] = useState<FormState>({ animal: '', cape: '', design: '', hand: '' });
+  const [form, setForm] = useState<FormState>({
+    animal: '',
+    cape: '',
+    design: '',
+    hand: '',
+  });
   const [image, setImage] = useState<string | null>(null);
   const [metadataUrl, setMetadataUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -40,7 +46,8 @@ export default function CreatePage() {
 
   const currentQuestion = QUESTIONS[step];
 
-  // ✅ Check if user holds OriginStory token
+  // ❌ Ownership check logic (kept for future use)
+  /*
   useEffect(() => {
     if (!address) return;
     fetch(`/api/auth/check-nft?address=${address}`)
@@ -48,8 +55,9 @@ export default function CreatePage() {
       .then((d) => setOwnsOrigin(d.ownsOrigin))
       .catch((err) => console.error('Origin check failed:', err));
   }, [address]);
+  */
 
-  // 🧠 Question progression
+  // 🧠 Step progression
   async function nextQuestion(value: string) {
     const updated = { ...form, [currentQuestion.key]: value };
     setForm(updated);
@@ -60,7 +68,7 @@ export default function CreatePage() {
     }
   }
 
-  // 🪄 Generate + upload to IPFS
+  // 🪄 Generate + upload
   async function handleGenerate(data: FormState) {
     setLoading(true);
     try {
@@ -100,7 +108,7 @@ export default function CreatePage() {
     }
   }
 
-  // 🪙 Mint (free if Origin holder)
+  // 🪙 Mint logic
   async function handleMint() {
     if (!metadataUrl || !isConnected || !address) {
       alert('⚠️ Connect your wallet and generate first.');
@@ -128,58 +136,60 @@ export default function CreatePage() {
     }
   }
 
+  // 🟢 Clean, mobile-first UI
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-zinc-900 border border-amber-600 p-8 rounded-xl shadow-lg space-y-6">
-        <h1 className="text-3xl font-bold text-center text-amber-300">🧘 Create Your Monje</h1>
+    <div className={styles.container}>
+      <h1 className={styles.title}>🧘 Create Your Monje</h1>
 
-        {!image ? (
-          <>
-            <h2 className="text-xl text-center text-amber-400">{currentQuestion.label}</h2>
-            <input
-              key={currentQuestion.key}
-              className="w-full mt-4 p-4 bg-zinc-800 border border-zinc-700 rounded-lg text-white"
-              placeholder="Type your answer..."
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                  nextQuestion(e.currentTarget.value.trim());
-                  e.currentTarget.value = '';
-                }
-              }}
-            />
-            <p className="text-center text-zinc-400 text-sm">Press Enter to continue</p>
-          </>
-        ) : (
-          <div className="text-center space-y-4">
-            <Image
-              src={image}
-              alt="Generated Monje"
-              width={512}
-              height={512}
-              className="w-full rounded-lg shadow-lg"
-            />
-            <button
-              onClick={handleMint}
-              disabled={minting}
-              className={`w-full py-3 font-bold rounded-lg transition ${
-                ownsOrigin
-                  ? 'bg-green-600 hover:bg-green-700 text-white'
-                  : 'bg-amber-600 hover:bg-amber-700 text-white'
-              }`}
-            >
-              {minting
-                ? 'Minting...'
-                : ownsOrigin
-                ? '🪙 Free Mint for Origin Holders'
-                : '🪙 Mint for 0.002 ETH'}
-            </button>
-          </div>
-        )}
+      {!image ? (
+        <>
+          <h2 className={styles.question}>{currentQuestion.label}</h2>
+          <input
+            key={currentQuestion.key}
+            className={styles.input}
+            placeholder="Type your answer..."
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                nextQuestion(e.currentTarget.value.trim());
+                e.currentTarget.value = '';
+              }
+            }}
+          />
+          <p className={styles.hint}>Press Enter to continue</p>
+        </>
+      ) : (
+        <div className="text-center space-y-4">
+          <Image
+            src={image}
+            alt="Generated Monje"
+            width={512}
+            height={512}
+            className={styles.image}
+          />
+          <button
+            onClick={handleMint}
+            disabled={minting}
+            className={`${styles.button} ${
+              ownsOrigin ? styles.freeMint : styles.paidMint
+            }`}
+          >
+            {minting
+              ? 'Minting...'
+              : ownsOrigin
+              ? '🪙 Free Mint for Origin Holders'
+              : '🪙 Mint for 0.002 ETH'}
+          </button>
+        </div>
+      )}
 
-        {loading && (
-          <p className="text-center text-zinc-400">✨ Summoning your Monje...</p>
-        )}
-      </div>
+      {loading && <p className={styles.loading}>✨ Summoning your Monje...</p>}
+
+      {/* Bottom Navigation */}
+      <nav className={styles.navbar}>
+        <a href="/" className={styles.navItem}>🏰 Home</a>
+        <a href="/create" className={styles.navItem}>🎨 Create</a>
+        <a href="/score" className={styles.navItem}>🎵 Play</a>
+      </nav>
     </div>
   );
 }

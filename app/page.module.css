@@ -1,69 +1,73 @@
 .container {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  text-align: center;
-  min-height: 100vh;
+  align-items: center;
   background: var(--bg-gradient);
   color: var(--text-primary);
-  padding: 2rem;
+  text-align: center;
+  padding: 2rem 1rem;
 }
 
 .title {
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 800;
+  margin-top: 1rem;
+  margin-bottom: 2rem;
   background: linear-gradient(90deg, var(--accent-purple), var(--accent-amber));
-  background-clip: text;              /* ✅ standard property */
-  -webkit-background-clip: text;      /* ✅ Safari / Chrome support */
-  -webkit-text-fill-color: transparent;
-  color: transparent;                 /* ✅ fallback */
-  margin-bottom: 0.5rem;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
 }
 
-.card {
-  background: var(--card-bg);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 2rem;
-  box-shadow: var(--border-glow);
-  backdrop-filter: blur(16px);
+.actions {
+  display: flex;
+  gap: 1rem;
+  flex-direction: column;
   width: 100%;
-  max-width: 420px;
-  margin-top: 2rem;
-  transition: transform 0.2s ease;
+  max-width: 300px;
 }
 
-.card:hover {
-  transform: translateY(-2px);
+.button {
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  font-weight: 600;
+  text-align: center;
+  font-size: 1rem;
+  transition: all 0.2s ease;
 }
 
-.btnPrimary {
+.primary {
   background: var(--accent-purple);
-  color: white;
-  padding: 0.9rem 1.2rem;
-  border-radius: 12px;
-  font-weight: 600;
-  width: 100%;
-  transition: all 0.2s ease;
+  color: #fff;
 }
 
-.btnPrimary:hover {
-  background: var(--accent-amber);
-  color: black;
-}
-
-.btnSecondary {
+.secondary {
   background: var(--accent-blue);
-  color: white;
-  padding: 0.9rem 1.2rem;
-  border-radius: 12px;
-  font-weight: 600;
-  width: 100%;
-  transition: all 0.2s ease;
+  color: #fff;
 }
 
-.btnSecondary:hover {
-  background: var(--accent-amber);
-  color: black;
+.button:hover {
+  filter: brightness(1.1);
+}
+
+.navbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.6rem 0;
+  backdrop-filter: blur(8px);
+}
+
+.navItem {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+.navItem:hover {
+  color: var(--accent-amber);
 }
