@@ -3,54 +3,46 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Wallet } from '@coinbase/onchainkit/wallet';
-import { useMiniKit, useAuthenticate } from '@coinbase/onchainkit/minikit';
+import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import PayToAccess from '../components/PayToAccess';
 import styles from './page.module.css';
 
 export default function Home() {
   const { setMiniAppReady, isMiniAppReady, context } = useMiniKit();
-  const { signIn } = useAuthenticate();
+  const user = context?.user;
 
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [address, setAddress] = useState<string | null>(null);
   const [ownsOrigin, setOwnsOrigin] = useState(false);
   const [ownsMonje, setOwnsMonje] = useState(false);
   const [mintPrice, setMintPrice] = useState<number | null>(null);
   const [checking, setChecking] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const user = context?.user; // from MiniKit user context (contains username, fid, etc.)
-
-  // ✅ Initialize MiniKit once
+  /** ✅ Initialize Base Mini App */
   useEffect(() => {
     if (!isMiniAppReady) setMiniAppReady();
   }, [isMiniAppReady, setMiniAppReady]);
 
-  // ✅ Resolve wallet address dynamically via our API
+  /** ✅ Extract Base custody wallet (Base App identity) */
   useEffect(() => {
-    async function resolveAddress() {
-      if (!user?.username) return;
+    if (!user) return;
 
-      try {
-        const res = await fetch(
-          `/api/resolve-base-address?name=${encodeURIComponent(user.username)}`
-        );
-        if (!res.ok) throw new Error('Failed to resolve address');
-        const data = await res.json();
-        if (data.address) setWalletAddress(data.address);
-      } catch (err) {
-        console.error('Address resolution failed:', err);
-      }
+    const baseAddress =
+      (user as any)?.custody_address ||
+      (user as any)?.verifiedAddresses?.[0]?.address ||
+      null;
+
+    if (baseAddress && baseAddress !== address) {
+      setAddress(baseAddress);
     }
+  }, [user, address]);
 
-    resolveAddress();
-  }, [user?.username]);
-
-  // ✅ Check NFT/Token ownership when we have wallet
+  /** ✅ Check NFT / token ownership */
   useEffect(() => {
-    if (!walletAddress) return;
+    if (!address) return;
     setChecking(true);
 
-    fetch(`/api/auth/check-nft?address=${walletAddress}`)
+    fetch(`/api/auth/check-nft?address=${address}`)
       .then((r) => r.json())
       .then((d) => {
         setOwnsOrigin(d.ownsOrigin);
@@ -59,23 +51,36 @@ export default function Home() {
       })
       .catch((err) => console.error('NFT check failed:', err))
       .finally(() => setChecking(false));
-  }, [walletAddress]);
+  }, [address]);
 
-  // 🟣 Sign-in screen
+  /** 🔄 Refresh Base user context manually */
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      // Re-run the MiniKit setup to refresh the Base app session
+      setMiniAppReady();
+    } catch (err) {
+      console.error('Failed to refresh Base identity:', err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // 🟣 Not signed in
   if (!user) {
     return (
       <div className={styles.container}>
-        <header className={styles.headerWrapper}>
-          <Wallet />
-        </header>
-
         <Image src="/sphere.svg" alt="Sphere" width={200} height={200} priority />
         <h2 className="mb-6 text-lg text-white">Sign in with Base</h2>
+        <p className="text-gray-400 text-sm mb-4">
+          Open this app inside the <strong>Base mobile app</strong> to connect automatically.
+        </p>
         <button
-          onClick={() => signIn()}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg"
+          onClick={handleRefresh}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md text-sm"
+          disabled={refreshing}
         >
-          Sign In
+          {refreshing ? 'Refreshing...' : 'Refresh Base Identity'}
         </button>
       </div>
     );
@@ -91,25 +96,30 @@ export default function Home() {
     );
   }
 
-  // 🟢 Authenticated + resolved address
+  // 🟢 Authenticated + loaded
   return (
     <div className={styles.container}>
-      <header className={styles.headerWrapper}>
-        <Wallet />
-      </header>
-
       <Image src="/sphere.svg" alt="Sphere" width={200} height={200} priority />
       <h1 className={styles.title}>La Monjería</h1>
 
-      <p className="text-white mb-4">
-        Welcome, <strong>@{user?.username ?? 'Guest'}</strong>
+      <p className="text-white mb-2">
+        Welcome, <strong>@{user?.username ?? 'base user'}</strong>
       </p>
 
-      {walletAddress && (
-        <p className="text-zinc-400 mb-6 text-sm">
-          Connected Base address: <span className="text-amber-300">{walletAddress}</span>
+      {address && (
+        <p className="text-gray-400 mb-4 break-all text-xs">
+          Connected Base address: <br />
+          {address}
         </p>
       )}
+
+      <button
+        onClick={handleRefresh}
+        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md mb-4 text-sm"
+        disabled={refreshing}
+      >
+        {refreshing ? 'Refreshing...' : 'Refresh Base Identity'}
+      </button>
 
       {ownsMonje ? (
         <div className="text-center space-y-4">
@@ -136,9 +146,9 @@ export default function Home() {
           <p className="text-amber-400">
             You don’t hold OriginStory. Mint costs {mintPrice ?? 0.002} ETH.
           </p>
-          {walletAddress && (
+          {address && (
             <PayToAccess
-              address={walletAddress}
+              address={address}
               priceEth={(mintPrice ?? 0.002).toString()}
             />
           )}
