@@ -36,7 +36,8 @@ export default function Home() {
     }
   }, [user, address]);
 
-  /** ✅ Check NFT / token ownership */
+  // ❌ Ownership check logic (kept for dev reference)
+  /*
   useEffect(() => {
     if (!address) return;
     setChecking(true);
@@ -58,87 +59,79 @@ export default function Home() {
       })
       .finally(() => setChecking(false));
   }, [address]);
+  */
 
-  // 🟣 Not signed in
-  if (!user) {
-    return (
-      <div className={styles.container}>
-        <Image src="/sphere.svg" alt="Sphere" width={200} height={200} priority />
-        <h2 className="mb-6 text-lg text-white">Sign in with Base</h2>
-        <p className="text-gray-400 text-sm">
-          Open this app inside the <strong>Base mobile app</strong> to connect automatically.
-        </p>
-      </div>
-    );
-  }
-
-  // 🟢 Checking ownership
-  if (checking) {
-    return (
-      <div className={styles.container}>
-        <Image src="/sphere.svg" alt="Sphere" width={200} height={200} priority />
-        <p>Checking your Monje + OriginStory status...</p>
-      </div>
-    );
-  }
-
-  // 🟢 Authenticated + loaded
+  // 🟢 Main landing page
   return (
     <div className={styles.container}>
       <Image src="/sphere.svg" alt="Sphere" width={200} height={200} priority />
       <h1 className={styles.title}>La Monjería</h1>
 
-      <p className="text-white mb-2">
-        Welcome, <strong>@{user?.username ?? 'base user'}</strong>
+      <p className="text-zinc-300 text-center mb-8 max-w-md">
+        A creative hub on Base where you can mint your own Monje NFT and play
+        your generated beats. Powered by AI + Base + OriginStory.
       </p>
 
-      {address && (
-        <p className="text-gray-400 mb-4 break-all text-xs">
-          Connected Base address: <br />
-          {address}
+      {user && (
+        <p className="text-gray-400 text-sm mb-6">
+          Connected as <strong>@{user?.username ?? 'base user'}</strong>
+          {address && (
+            <>
+              <br />
+              <span className="text-xs text-zinc-500">{address}</span>
+            </>
+          )}
         </p>
       )}
 
+      <div className="flex flex-col space-y-4 w-full max-w-xs">
+        <Link
+          href="/create"
+          className="bg-green-600 hover:bg-green-700 text-white text-center py-3 rounded-lg font-semibold transition"
+        >
+          🎨 Create Your Monje
+        </Link>
+
+        <Link
+          href="/score"
+          className="bg-amber-600 hover:bg-amber-700 text-white text-center py-3 rounded-lg font-semibold transition"
+        >
+          🎵 Play Music Studio
+        </Link>
+      </div>
+
+      {/* ❌ Old conditional display (preserved for devs)
       {ownsMonje ? (
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-4 mt-8">
           <p className="text-amber-300">🎵 You already own a Monje NFT!</p>
-          <Link
-            href="/score"
-            className="px-4 py-3 bg-amber-600 text-white rounded hover:bg-amber-700"
-          >
+          <Link href="/score" className="px-4 py-3 bg-amber-600 text-white rounded hover:bg-amber-700">
             Go to Music Studio
           </Link>
         </div>
       ) : ownsOrigin ? (
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-4 mt-8">
           <p className="text-green-400">🪙 You hold OriginStory — your mint is free!</p>
-          <Link
-            href="/create"
-            className="px-4 py-3 bg-green-600 text-white rounded hover:bg-green-700"
-          >
+          <Link href="/create" className="px-4 py-3 bg-green-600 text-white rounded hover:bg-green-700">
             Create & Mint Your Monje
           </Link>
         </div>
       ) : (
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-4 mt-8">
           <p className="text-amber-400">
             You don’t hold OriginStory. Mint costs {mintPrice ?? 0.002} ETH.
           </p>
           {address && (
-            <PayToAccess
-              address={address}
-              priceEth={(mintPrice ?? 0.002).toString()}
-            />
+            <PayToAccess address={address} priceEth={(mintPrice ?? 0.002).toString()} />
           )}
-          <p className="text-zinc-400 text-sm mt-4">
-            Or{' '}
-            <Link href="/create" className="underline text-amber-300">
-              go create your Monje
-            </Link>{' '}
-            now.
-          </p>
         </div>
       )}
+      */}
+
+      <footer className="mt-12 text-xs text-zinc-500 text-center">
+        Built with <span className="text-amber-400">Base</span> •{' '}
+        <span className="text-green-400">OriginStory</span> •{' '}
+        <span className="text-blue-400">AI</span>
+      </footer>
     </div>
   );
 }
